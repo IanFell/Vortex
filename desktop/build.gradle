@@ -1,0 +1,57 @@
+apply plugin: "java"
+
+sourceCompatibility = 1.7
+sourceSets.main.java.srcDirs = [ "src/" ]
+sourceSets.main.resources.srcDirs = ["../core/assets"]
+
+project.ext.mainClassName = "com.tornadogame.desktop.DesktopLauncher"
+project.ext.assetsDir = new File("../core/assets")
+
+task run(dependsOn: classes, type: JavaExec) {
+    main = project.mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+    standardInput = System.in
+    workingDir = project.assetsDir
+    ignoreExitValue = true
+}
+
+task debug(dependsOn: classes, type: JavaExec) {
+    main = project.mainClassName
+    classpath = sourceSets.main.runtimeClasspath
+    standardInput = System.in
+    workingDir = project.assetsDir
+    ignoreExitValue = true
+    debug = true
+}
+
+task dist(type: Jar) {
+    manifest {
+        attributes 'Main-Class': project.mainClassName
+    }
+    dependsOn configurations.runtimeClasspath
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+}
+
+
+dist.dependsOn classes
+
+task javaPackager(type: Exec, dependsOn: dist) {
+    group = 'BUILD GROUP'
+    description = 'BUILD IT'
+	workingDir project.projectDir
+	commandLine = [
+		'javapackager', 
+		'-deploy',
+		'-nosign',
+		'-outdir', "${buildDir}/distribution",
+		'-srcdir', "${buildDir}/libs",
+		'-native', 'image',
+		'-name', project.appName,
+		'-appclass', project.mainClassName
+	]
+}
+
+eclipse.project.name = appName + "-desktop"
